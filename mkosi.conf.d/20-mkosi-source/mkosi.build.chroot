@@ -1,0 +1,14 @@
+#!/bin/sh
+set -e
+
+cd "$SRCDIR/mkosi"
+
+rpmbuild \
+    -bb \
+    --build-in-place \
+    $([[ "$WITH_TESTS" == "0" ]] && echo --nocheck) \
+    --define "_topdir $SRCDIR/mkosi" \
+    --define "_sourcedir $SRCDIR/mkosi/rpm" \
+    --define "_rpmdir $OUTPUTDIR" \
+    --define "_build_name_fmt %%{NAME}-%%{VERSION}-%%{RELEASE}.%%{ARCH}.rpm" \
+    $SRCDIR/mkosi/rpm/mkosi.spec

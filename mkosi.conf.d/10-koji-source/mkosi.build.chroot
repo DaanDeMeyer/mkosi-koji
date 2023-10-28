@@ -1,0 +1,14 @@
+#!/bin/sh
+set -e
+
+cd "$SRCDIR/koji"
+
+rpmbuild \
+    -bb \
+    --build-in-place \
+    $([[ "$WITH_TESTS" == "0" ]] && echo --nocheck) \
+    --define "_topdir $SRCDIR/koji" \
+    --define "_sourcedir $SRCDIR/koji" \
+    --define "_rpmdir $OUTPUTDIR" \
+    --define "_build_name_fmt %%{NAME}-%%{VERSION}-%%{RELEASE}.%%{ARCH}.rpm" \
+    $SRCDIR/koji/koji.spec
