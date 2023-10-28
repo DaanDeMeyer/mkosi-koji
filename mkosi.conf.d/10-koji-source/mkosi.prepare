@@ -28,7 +28,7 @@ if [ "$1" = "build" ]; then
         --define "_build_name_fmt %%{NAME}-%%{VERSION}-%%{RELEASE}.%%{ARCH}.rpm" \
         "$CHROOT_SRCDIR/koji/koji.spec"
     do
-        if [ ! $? -eq 11 ]; then
+        if [ $? -ne 11 ]; then
             exit $?
         fi
 
