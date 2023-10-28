@@ -26,7 +26,7 @@ if [ "$1" = "build" ]; then
         --define "_topdir $CHROOT_SRCDIR/koji" \
         --define "_sourcedir $CHROOT_SRCDIR/koji" \
         --define "_build_name_fmt %%{NAME}-%%{VERSION}-%%{RELEASE}.%%{ARCH}.rpm" \
-        $CHROOT_SRCDIR/koji/koji.spec
+        "$CHROOT_SRCDIR/koji/koji.spec"
     do
         if [ ! $? -eq 11 ]; then
             exit $?

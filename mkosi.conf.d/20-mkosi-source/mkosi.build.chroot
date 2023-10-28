@@ -11,4 +11,4 @@ rpmbuild \
     --define "_sourcedir $SRCDIR/mkosi/rpm" \
     --define "_rpmdir $OUTPUTDIR" \
     --define "_build_name_fmt %%{NAME}-%%{VERSION}-%%{RELEASE}.%%{ARCH}.rpm" \
-    $SRCDIR/mkosi/rpm/mkosi.spec
+    "$SRCDIR/mkosi/rpm/mkosi.spec"
