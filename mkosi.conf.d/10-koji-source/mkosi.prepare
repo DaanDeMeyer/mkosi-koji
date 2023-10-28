@@ -10,9 +10,29 @@ fi
 mkosi-chroot \
     rpmspec \
     --query \
-    $DEPS \
+    "$DEPS" \
     --define "_topdir $CHROOT_SRCDIR/koji" \
     --define "_sourcedir $CHROOT_SRCDIR/koji" \
     "$CHROOT_SRCDIR/koji/koji.spec" \
     | grep -E -v "koji" \
     | xargs -d '\n' dnf install --best
+
+if [ "$1" = "build" ]; then
+    until mkosi-chroot \
+        sh -c 'cd $CHROOT_SRCDIR/koji && exec $0 "$@"' \
+        rpmbuild \
+        -bd \
+        --build-in-place \
+        --define "_topdir $CHROOT_SRCDIR/koji" \
+        --define "_sourcedir $CHROOT_SRCDIR/koji" \
+        --define "_build_name_fmt %%{NAME}-%%{VERSION}-%%{RELEASE}.%%{ARCH}.rpm" \
+        $CHROOT_SRCDIR/koji/koji.spec
+    do
+        if [ ! $? -eq 11 ]; then
+            exit $?
+        fi
+
+        dnf builddep "$SRCDIR"/koji/SRPMS/koji-*.buildreqs.nosrc.rpm
+        rm "$SRCDIR"/koji/SRPMS/koji-*.buildreqs.nosrc.rpm
+    done
+fi
