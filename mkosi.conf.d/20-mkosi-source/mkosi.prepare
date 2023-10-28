@@ -1,0 +1,18 @@
+#!/bin/sh
+set -e
+
+if [ "$1" = "build" ]; then
+    DEPS="--buildrequires"
+else
+    DEPS="--requires"
+fi
+
+mkosi-chroot \
+    rpmspec \
+    --query \
+    $DEPS \
+    --define "_topdir $CHROOT_SRCDIR/mkosi" \
+    --define "_sourcedir $CHROOT_SRCDIR/mkosi/rpm" \
+    "$CHROOT_SRCDIR/mkosi/rpm/mkosi.spec" \
+    | grep -E -v "mkosi" \
+    | xargs -d '\n' dnf install --best

@@ -1,0 +1,4 @@
+#!/bin/sh
+
+dnf --cacheonly install "$OUTPUTDIR"/*mkosi*.rpm
+cp "$OUTPUTDIR"/mkosi*.rpm "$BUILDROOT/usr/share/"

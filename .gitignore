@@ -1,0 +1,4 @@
+mkosi.cache/
+mkosi.output/
+mkosi.local.conf
+.mkosi-tmp*

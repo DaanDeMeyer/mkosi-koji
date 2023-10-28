@@ -1,0 +1,18 @@
+#!/bin/sh
+set -e
+
+if [ "$1" = "build" ]; then
+    DEPS="--buildrequires"
+else
+    DEPS="--requires"
+fi
+
+mkosi-chroot \
+    rpmspec \
+    --query \
+    $DEPS \
+    --define "_topdir $CHROOT_SRCDIR/koji" \
+    --define "_sourcedir $CHROOT_SRCDIR/koji" \
+    "$CHROOT_SRCDIR/koji/koji.spec" \
+    | grep -E -v "koji" \
+    | xargs -d '\n' dnf install --best

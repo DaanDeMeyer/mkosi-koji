@@ -1,0 +1,98 @@
+#!/bin/sh
+set -ex
+
+cd "$BUILDROOT/etc/pki/koji"
+
+openssl genrsa -out private/koji_ca_cert.key 2048
+
+openssl req \
+        -config ssl.cnf \
+        -new \
+        -x509 \
+        -subj "/C=US/ST=Oregon/L=Portland/O=IT/OU=kojihub/CN=localhost.localdomain" \
+        -key private/koji_ca_cert.key \
+        -out koji_ca_cert.crt \
+        -extensions v3_ca
+
+for USER in koji kojira; do
+    openssl genrsa -out private/$USER.key 2048
+
+    openssl req \
+            -config ssl.cnf \
+            -new \
+            -subj "/C=US/ST=Oregon/L=Portland/O=IT/OU=$USER/CN=$USER" \
+            -nodes \
+            -out certs/$USER.csr \
+            -key private/$USER.key
+
+    openssl ca \
+            -config ssl.cnf \
+            -batch \
+            -keyfile private/koji_ca_cert.key \
+            -cert koji_ca_cert.crt \
+            -out certs/$USER.crt \
+            -outdir certs \
+            -infiles certs/$USER.csr
+
+    cat certs/$USER.crt private/$USER.key > $USER.pem
+done
+
+mkdir "$BUILDROOT/root/.koji"
+cp koji.pem "$BUILDROOT/root/.koji/client.crt"
+cp koji_ca_cert.crt "$BUILDROOT/root/.koji/clientca.crt"
+cp koji_ca_cert.crt "$BUILDROOT/root/.koji/serverca.crt"
+
+cp kojira.pem "$BUILDROOT/etc/kojira/client.crt"
+cp koji_ca_cert.crt "$BUILDROOT/etc/kojira/serverca.crt"
+
+for USER in kojid kojihub; do
+    openssl genrsa -out private/$USER.key 2048
+
+    openssl req \
+            -config ssl.cnf \
+            -new \
+            -subj "/C=US/ST=Oregon/L=Portland/O=IT/OU=$USER/CN=localhost.localdomain" \
+            -nodes \
+            -out certs/$USER.csr \
+            -key private/$USER.key
+
+    openssl ca \
+            -config ssl.cnf \
+            -batch \
+            -keyfile private/koji_ca_cert.key \
+            -cert koji_ca_cert.crt \
+            -out certs/$USER.crt \
+            -outdir certs \
+            -infiles certs/$USER.csr
+
+    cat certs/$USER.crt private/$USER.key > $USER.pem
+done
+
+cp kojid.pem "$BUILDROOT/etc/kojid/client.crt"
+cp koji_ca_cert.crt "$BUILDROOT/etc/kojid/serverca.crt"
+
+SU="setpriv --reuid=postgres --regid=postgres --clear-groups"
+
+mkosi-chroot $SU initdb --pgdata /var/lib/pgsql/data/
+
+mkosi-chroot $SU postgres --single -D /var/lib/pgsql/data/ -E postgres <<- EOF
+create user koji with password 'koji';
+create database koji with owner koji;
+EOF
+
+mkosi-chroot $SU postgres --single -D /var/lib/pgsql/data/ -j -E koji <<- EOF
+set role koji;
+$(cat "$BUILDROOT/usr/share/koji/schema.sql")
+EOF
+
+mkosi-chroot $SU postgres --single -D /var/lib/pgsql/data/ -j -E koji <<- EOF
+set role koji;
+insert into users (name, status, usertype) values ('koji', 0, 0);
+insert into user_perms (user_id, perm_id, creator_id)
+      select users.id, permissions.id, users.id from users, permissions
+      where users.name = 'koji' and permissions.name = 'admin';
+insert into users (name, status, usertype) values ('kojira', 0, 0);
+insert into user_perms (user_id, perm_id, creator_id)
+      select users.id, permissions.id, users.id from users, permissions
+      where users.name = 'kojira' and permissions.name = 'repo';
+EOF

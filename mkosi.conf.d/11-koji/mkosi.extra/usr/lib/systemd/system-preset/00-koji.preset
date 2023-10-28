@@ -1,0 +1,4 @@
+enable kojid.service
+enable kojira.service
+enable httpd.service
+enable postgresql.service
