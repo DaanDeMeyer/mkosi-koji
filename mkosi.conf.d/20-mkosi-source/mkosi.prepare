@@ -28,8 +28,9 @@ if [ "$1" = "build" ]; then
         --define "_build_name_fmt %%{NAME}-%%{VERSION}-%%{RELEASE}.%%{ARCH}.rpm" \
         "$CHROOT_SRCDIR/mkosi/rpm/mkosi.spec"
     do
-        if [ $? -ne 11 ]; then
-            exit $?
+        EXIT_STATUS=$?
+        if [ $EXIT_STATUS -ne 11 ]; then
+            exit $EXIT_STATUS
         fi
 
         dnf builddep "$SRCDIR"/mkosi/SRPMS/mkosi-*.buildreqs.nosrc.rpm
